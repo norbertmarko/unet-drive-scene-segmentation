@@ -1,5 +1,6 @@
 # imported U-Net model from model.py
 from model import Unet
+from data_loader import generator
 
 import cv2
 import numpy as np
@@ -18,8 +19,12 @@ width = image_shape[0]
 height = image_shape[1]
 num_classes = 4
 
-img_dir = "./dataset/training/images/"
-label_dir = "./dataset/training/labels/"
+img_path = "./dataset/training/images/"
+label_path = "./dataset/training/labels/"
+
+batch_size=10
+steps_per_epoch = len(os.listdir(img_path)) // batch_size
+epochs = 2
 
 # Color palette
 
@@ -27,48 +32,6 @@ palette = {(128,64,1):0,
            (255,143,3):1,
            (128,255,2):2,
            (0,0,0):3}
-
-# PREPROCESSING
-
-def input_image_array(path, width, height):
-    img = cv2.imread(path, 1)
-    img_array = np.float32(cv2.resize(img, (width, height))) / 255.0
-    return img_array
-
-def input_label_array(path, width, height, num_classes, color_codes):
-    label = cv2.imread(path)
-    label = cv2.resize(label, (width, height))
-
-    int_array = np.ndarray(shape=(height, width), dtype=int)
-    int_array[:,:] = 0
-
-    # rgb to integer
-    for rgb, idx in color_codes.items():
-        int_array[(label==rgb).all(2)] = idx
-
-    one_hot_array = np.zeros((height, width, num_classes))
-
-    # one-hot encoding
-    for c in range(num_classes):
-        one_hot_array[:, :, c] = (int_array == c).astype(int)
-
-    return one_hot_array
-
-# lists to append input images and labels
-X = []
-y = []
-
-images = os.listdir(img_dir)
-images.sort()
-labels = os.listdir(label_dir)
-labels.sort()
-
-for img, label in zip(images, labels):
-    X.append(input_image_array(img_dir + img, width, height))
-    y.append(input_label_array(label_dir + label, width, height, num_classes, palette))
-
-# input layer takes NumPy Arrays
-X, y = np.array(X), np.array(y)
 
 # TRAINING
 filters = 64
@@ -88,8 +51,11 @@ checkpoint = ModelCheckpoint(mode='max', filepath='checkpoints/best_outcome.h5',
 early_stop = EarlyStopping(mode='max', monitor='acc', patience=6, verbose=1)
 callback_list = [tensorboard, checkpoint, early_stop]
 
+train_gen = generator(img_path, label_path, batch_size, height, width, num_classes)
+
 # try it with fit_generator
-backprop = unet.fit(X, y, validation_split=0.1, batch_size=16, epochs=200, callbacks=callback_list)
+#backprop = unet.fit(X, y, validation_split=0.1, batch_size=16, epochs=200, callbacks=callback_list)
+backprop = unet.fit_generator(train_gen, steps_per_epoch, epochs)
 
 unet.save_weights("weights-drive-scene.h5", overwrite=True)
 unet.save("model-drive-scene.model", overwrite=True)

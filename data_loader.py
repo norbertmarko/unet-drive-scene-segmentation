@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import random
 import itertools
+import matplotlib.pyplot as plt
 
 image_shape = (512, 288)
 width = image_shape[0]
@@ -18,7 +19,7 @@ palette = {(128,64,1):0,
 img_path = './dataset/training/images/'
 label_path = './dataset/training/labels/'
 
-batch_size=20
+batch_size=15
 
 def get_pairs(img_path, label_path):
 
@@ -35,7 +36,7 @@ def input_image_array(path, width, height):
     img_array = np.float32(cv2.resize(img, (width, height))) / 255.0 #better normalize
     return img_array
 
-def input_label_array(path, width, height, num_classes, color_codes):
+def input_label_array(path, width, height, num_classes, color_codes, one_hot=True):
     label = cv2.imread(path)
     label = cv2.resize(label, (width, height))
 
@@ -54,7 +55,7 @@ def input_label_array(path, width, height, num_classes, color_codes):
 
     return one_hot_array
 
-def generator(img_path, label_path, batch_size, height, width, n_classes, do_augment=False):
+def generator(img_path, label_path, batch_size, height, width, num_classes):
 
     input_pairs = get_pairs(img_path, label_path) # rewrite if param name changes
     random.shuffle(input_pairs)
@@ -63,11 +64,14 @@ def generator(img_path, label_path, batch_size, height, width, n_classes, do_aug
 
     while True:
         X = []
-        y = []
+        Y = []
         for _ in range(batch_size):
             im, lab = next(iterate_pairs)
 
-            X.append(input_image_array(im, width, height))
-            y.append(input_label_array(lab, width, height, num_classes, palette))
+            appended_im = next(iter(im))
+            appended_lab = next(iter(lab))
 
-        yield np.array(X), np.array(y)
+            X.append(input_image_array(appended_im, width, height))
+            Y.append(input_label_array(appended_lab, width, height, num_classes, palette))
+
+        yield (np.array(X), np.array(Y))

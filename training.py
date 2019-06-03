@@ -1,5 +1,6 @@
 # imported U-Net model from model.py
 from model import Unet
+from model_2 import unet2
 from data_loader import generator
 
 import cv2
@@ -23,7 +24,7 @@ img_path = "./dataset/training/images/"
 label_path = "./dataset/training/labels/"
 
 batch_size=10
-steps_per_epoch = len(os.listdir(img_path)) // batch_size
+steps_per_epoch = int(len(os.listdir(img_path)) // batch_size )
 epochs = 2
 
 # Color palette
@@ -35,14 +36,16 @@ palette = {(128,64,1):0,
 
 # TRAINING
 filters = 64
-
-unet = Unet(height, width, num_classes, filters)
+model = unet2(num_classes, height, width)
+#unet = Unet(height, width, num_classes, filters)
 #unet_parallel = multi_gpu_model(unet, 1)
 #unet_parallel.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-unet.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+#unet.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-unet.summary()
-
+model.summary()
+#unet.summary()
+'''
 # naming for TensorBoard
 NAME = "unet-drive-scene-{}".format(int(time.time()))
 
@@ -59,3 +62,4 @@ backprop = unet.fit_generator(train_gen, steps_per_epoch, epochs)
 
 unet.save_weights("weights-drive-scene.h5", overwrite=True)
 unet.save("model-drive-scene.model", overwrite=True)
+'''

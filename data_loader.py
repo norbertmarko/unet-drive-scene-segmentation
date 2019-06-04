@@ -5,6 +5,8 @@ import numpy as np
 import random
 import itertools
 import matplotlib.pyplot as plt
+from augment import augmenter
+import imageio
 
 image_shape = (512, 288)
 width = image_shape[0]
@@ -31,14 +33,23 @@ def get_pairs(img_path, label_path):
     pair.append((img, label))
     return pair
 
-def input_image_array(path, width, height):
-    img = cv2.imread(path, 1)
-    img_array = np.float32(cv2.resize(img, (width, height))) / 255.0 #better normalize
+def input_image_array(path, width, height, do_augment=False):
+    #img = cv2.imread(path, 1)
+    img = imageio.imread(path, as_gray=False)
+    img_array = np.uint8(cv2.resize(img, (width, height))) / 255.0 #better normalize, was np.float32
+
+    if do_augment:
+        img_array = augmenter(img_array)
     return img_array
 
-def input_label_array(path, width, height, num_classes, color_codes, one_hot=True):
-    label = cv2.imread(path)
+def input_label_array(path, width, height, num_classes, color_codes, one_hot=True,
+do_augment=False):
+    #label = cv2.imread(path)
+    label = imageio.imread(path, as_gray=False, pilmode="RGB")
     label = cv2.resize(label, (width, height))
+
+    if do_augment:
+        label[:,:,0] = augmenter(label[:,:,0])
 
     int_array = np.ndarray(shape=(height, width), dtype=int)
     int_array[:,:] = 0

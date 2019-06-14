@@ -46,45 +46,39 @@ def _augment_seg(img, seg):
 # deterministic augmentation
     aug_det = seq[0].to_deterministic()
 
+    images = []
+    labels = []
+
     image_aug = aug_det.augment_image( img )
 
     seg_aug = SegmentationMapOnImage(seg , nb_classes=np.max(seg)+1 , shape=img.shape)
     segmap_aug = aug_det.augment_segmentation_maps( seg_aug )
     segmap_aug = segmap_aug.get_arr_int(background_class_id=3)
 
-    fig = plt.figure()
-    ax1 = fig.add_subplot(211)
-    ax2 = fig.add_subplot(212)
-
-    ax1.imshow(image_aug)
-    ax2.imshow(segmap_aug)
-    plt.show()
-
+    return image_aug, segmap_aug
 
 # image + label can be augmented in one line also
 # image_aug, segmap_aug = aug_det(image=img, segmentation_maps=segmap)
 
-def try_n_times(fn ,n ,*args ,**kargs):
+def try_n_times(fn ,n ,*args ,**kwargs):
 
 	attempts = 0
 
 	while attempts < n:
 		try:
-			return fn(*args , **kargs)
+			return fn(*args , **kwargs)
 		except Exception as e:
 			attempts += 1
 
-	return fn(*args , **kargs)
+	return fn(*args , **kwargs)
 
-def augment_seg(img_path, label_path): # kicserélni a kezdeti argumentumokra, return passzoljon
-    input_pairs = get_pairs(img_path, label_path)
-    iterate_pairs = itertools.cycle(input_pairs)
-    im, lab = next(iterate_pairs)
-    im_readin = next(iter(im))
-    seg_readin = next(iter(lab))
+def augment_seg(img_array, label_array):
 
-    img = imageio.imread(im_readin, as_gray=False, pilmode="RGB")
-    seg = input_label_array(seg_readin, width, height, num_classes, palette, do_augment=do_augment)
-    return try_n_times(_augment_seg, 10, img, seg)
+    assert len(img_array) == len(label_array),"Image \
+    and Label numbers are not equal!"
 
-augment_seg(img_path, label_path)
+    for i in range(0, len(img_array)):
+        img = np.uint8(img_array[i].reshape(288, 512, 3))
+        seg = np.uint8(label_array[i].reshape(288, 512, 1))
+
+        yield try_n_times(_augment_seg, 10, img, seg)

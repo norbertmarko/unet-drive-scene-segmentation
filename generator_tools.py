@@ -1,0 +1,103 @@
+import cv2
+import h5py
+import numpy as np
+
+from augmentation import try_n_times, _augment_seg
+
+class MeanPreprocessor:
+    def __init__(self, rMean, gMean, bMean):
+
+        self.rMean = rMean
+        self.gMean = gMean
+        self.bMean = bMean
+
+    def preprocess(self, image):
+
+        # splitting the image, subtracting channel-wise
+        (B, G, R) = cv2.split(image.astype("float32"))
+
+        # channel-wise subtraction
+        R -= self.rMean
+        G -= self.gMean
+        B -= self.bMean
+
+        return cv2.merge([B, G, R])
+
+# way to initialize it:
+# means = json.loads(open(config.dataset_mean).read())
+# mp = MeanPreprocessor(means["R"], means["G"], means["B"])
+# give it to HDF5_generator in arguments: preprocessors=[mp] (as a list)
+# DEFINE EVERY MAIN PREPROCESS FUNCTION AS: preprocess, so it can be looped
+
+class HDF5_generator:
+    def __init__ (self, dbPath, image_shape, num_classes, batch_size, one_hot=True, preprocessors=None, do_augment=False):
+        #opening the HDF5 database
+        self.db = h5py.File(dbPath)
+        # length of dataset
+        self.ImageCount = self.db["images"].shape[0]
+
+        self.image_shape = image_shape
+        self.width = self.image_shape[0]
+        self.height = self.image_shape[1]
+        self.num_classes = num_classes
+        self.batch_size = batch_size
+        self.preprocessors = preprocessors
+        #augmentation here too?
+
+    def generator(self):
+        epochs = 0
+
+        while epochs < passes:
+            for i in arange(0, self.ImageCount, self.batch_size):
+                # read in images and labels from HDF5
+                images = self.db["images"][i: i + self.batch_size]
+                labels = self.db["labels"][i: i + self.batch_size]
+
+
+                if self.preprocessors is not None:
+                    image_batch = []
+
+                    for image in images:
+                        for p in self.preprocessors:
+                            image = p.preprocess(image)
+                        image_batch.append(image)
+
+                    images = np.array(image_batch)
+
+                # check if data augmentation should be done
+                if do_augment:
+
+                    aug_images = []
+                    aug_labels = []
+
+                    for i in range(0, len(images)):
+                        img = np.uint8(images[i].reshape(288, 512, 3))
+                        seg = np.uint8(labels[i].reshape(288, 512, 1))
+
+                        image, label = try_n_times(_augment_seg, 10, img, seg)
+                        # appending the augmented images/labels to the batch
+                        # batch size becomes bigger than the parameter - could be a problem
+                        aug_images.append(image)
+                        aug_labels.append(label)
+                    # replacing them this way, so batch size stays the same (online augmentation)
+                    images = np.array(aug_images)
+                    labels = np.array(aug_labels)
+
+
+                if one_hot:
+                    label_batch = []
+
+                    for label in labels:
+                        one_hot_array = np.zeros((self.height, self.width, self.num_classes))
+
+                        for c in range(self.num_classes):
+                            one_hot_array[:, :, c] = (label == c).astype(int)
+
+                    label_batch.append(one_hot_array)
+                    labels = np.array(label_batch)
+
+                yield (images, labels)
+            epochs += 1
+
+    def close(self):
+        self.db.close()

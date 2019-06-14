@@ -71,14 +71,3 @@ def try_n_times(fn ,n ,*args ,**kwargs):
 			attempts += 1
 
 	return fn(*args , **kwargs)
-
-def augment_seg(img_array, label_array):
-
-    assert len(img_array) == len(label_array),"Image \
-    and Label numbers are not equal!"
-
-    for i in range(0, len(img_array)):
-        img = np.uint8(img_array[i].reshape(288, 512, 3))
-        seg = np.uint8(label_array[i].reshape(288, 512, 1))
-
-        yield try_n_times(_augment_seg, 10, img, seg)

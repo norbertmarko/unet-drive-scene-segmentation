@@ -24,7 +24,7 @@ class MeanPreprocessor:
         return cv2.merge([B, G, R])
 
 # way to initialize it:
-# means = json.loads(open(config.dataset_mean).read())
+# means = json.loads(open(dataset_mean).read())
 # mp = MeanPreprocessor(means["R"], means["G"], means["B"])
 # give it to HDF5_generator in arguments: preprocessors=[mp] (as a list)
 # DEFINE EVERY MAIN PREPROCESS FUNCTION AS: preprocess, so it can be looped

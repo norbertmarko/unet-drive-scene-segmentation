@@ -7,24 +7,13 @@ import random
 import progressbar
 import json
 
+# classes
 from data_to_hdf5 import HDF5writer
 
 # neccessary parameters
-palette = {(1,64,128):0,
-           (3,143,255):1,
-           (2,255,128):2,
-           (0,0,0):3}
-
-img_path = './dataset/training/images/'
-label_path = './dataset/training/labels/'
-hdf5_path ='./hdf5_container/serialized_data_2.hdf5'
-dataset_mean = "./hdf5_container/mean_values.json"
-
-image_shape = (512, 288)
-width = image_shape[0]
-height = image_shape[1]
-batch_size=32
-bufferSize = None
+from parameters import palette
+from parameters import img_path, label_path, hdf5_path, dataset_mean
+from parameters import image_shape, width, height, batchSize, bufferSize
 
 # get paths to images and labels
 imagePaths = list(paths.list_images(img_path))
@@ -45,13 +34,13 @@ label_dims = (len(labelPaths), height*width*1)
 writer = HDF5writer(img_dims, label_dims, hdf5_path)
 
 # initialize ProgressBar
-widgets = ["Converting into HDF5:", progressbar.Percentage(), " ",
+widgets = ["Converting data into HDF5:", progressbar.Percentage(), " ",
 progressbar.Bar(), " ", progressbar.ETA()]
 pbar = progressbar.ProgressBar(maxval=len(imagePaths), widgets=widgets).start()
 
-for i in np.arange(0, len(imagePaths), batch_size):
-    batchImages = imagePaths[i:i + batch_size]
-    batchLabels = labelPaths[i:i + batch_size]
+for i in np.arange(0, len(imagePaths), batchSize):
+    batchImages = imagePaths[i:i + batchSize]
+    batchLabels = labelPaths[i:i + batchSize]
 
     # lists to store the batches during loop
     batch_img = []

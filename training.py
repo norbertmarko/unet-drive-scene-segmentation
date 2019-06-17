@@ -1,65 +1,72 @@
-# imported U-Net model from model.py
-from model import Unet
-from model_2 import unet2
-from data_loader import generator
-
-import cv2
-import numpy as np
+import json
 import os
-import time
 
 from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 
-# training on multiple GPUs
-from tensorflow.keras.utils import multi_gpu_model
+# imported U-Net model from model.py
+from model import Unet
 
-# Parameters and source directories
+# classes
+from generator_tools import MeanPreprocessor, HDF5_generator
+# parameters
+from parameters import dataset_mean, gpu_count, show_summary
+from parameters import hdf5_path, image_shape, num_classes, batch_size
+from parameters import one_hot, do_augment, hdf5_val_path, val_batch_size
+from parameters import height, width, num_classes, steps_per_epoch, epochs
 
-image_shape = (512, 288)
-width = image_shape[0]
-height = image_shape[1]
-num_classes = 4
+# mean subtraction preparation
+means = json.loads(open(dataset_mean).read())
+mp = MeanPreprocessor(means["R"], means["G"], means["B"])
 
-img_path = "./dataset/training/images/"
-label_path = "./dataset/training/labels/"
+# training data generator
+train_gen = HDF5_generator(hdf5_path, image_shape, num_classes, batch_size,
+                           one_hot, preprocessors=[mp], do_augment)
 
-batch_size=10
-steps_per_epoch = int(len(os.listdir(img_path)) // batch_size )
-epochs = 2
+# validation data generator
+val_gen = HDF5_generator(hdf5_val_path, image_shape, num_classes,
+                         val_batch_size, one_hot, do_augment=False)
 
-# Color palette
-
-palette = {(128,64,1):0,
-           (255,143,3):1,
-           (128,255,2):2,
-           (0,0,0):3}
-
-# TRAINING
-filters = 64
-model = unet2(num_classes, height, width)
-#unet = Unet(height, width, num_classes, filters)
-#unet_parallel = multi_gpu_model(unet, 1)
-#unet_parallel.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-#unet.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-model.summary()
-#unet.summary()
-'''
 # naming for TensorBoard
 NAME = "unet-drive-scene-{}".format(int(time.time()))
 
+# callbacks
 tensorboard = TensorBoard(log_dir='logs/{}'.format(NAME))
-checkpoint = ModelCheckpoint(mode='max', filepath='checkpoints/best_outcome.h5', monitor='acc', save_best_only='True', save_weights_only='True', verbose=1)
+checkpoint = ModelCheckpoint(mode='max', filepath='checkpoints/best_outcome.h5',
+                   monitor='acc', save_best_only='True', save_weights_only='True', verbose=1)
 early_stop = EarlyStopping(mode='max', monitor='acc', patience=6, verbose=1)
 callback_list = [tensorboard, checkpoint, early_stop]
 
-train_gen = generator(img_path, label_path, batch_size, height, width, num_classes)
+# define model
+model = unet(height, width, num_classes)
 
-# try it with fit_generator
-#backprop = unet.fit(X, y, validation_split=0.1, batch_size=16, epochs=200, callbacks=callback_list)
-backprop = unet.fit_generator(train_gen, steps_per_epoch, epochs)
+if gpu_count > 1:
 
-unet.save_weights("weights-drive-scene.h5", overwrite=True)
-unet.save("model-drive-scene.model", overwrite=True)
-'''
+    from tensorflow.keras.utils import multi_gpu_model
+
+    model_parallel = multi_gpu_model(model, gpu_count)
+    model_parallel.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    if show_summary:
+        model_parallel.summary()
+
+    # backpropagation
+    backprop = model_parallel.fit_generator(train_gen, steps_per_epoch, epochs,
+                                            validation_data=val_gen)
+
+    # saving weights / model
+    model_parallel.save_weights("{}.h5".format(NAME), overwrite=True)
+    model_parallel.save("{}.model".format(NAME), overwrite=True)
+
+else:
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    if show_summary:
+        model.summary()
+
+    # backpropagation
+    backprop = model.fit_generator(train_gen, steps_per_epoch, epochs,
+                                    validation_data=val_gen)
+
+    # saving weights / model
+    model.save_weights("{}.h5".format(NAME), overwrite=True)
+    model.save("{}.model".format(NAME), overwrite=True)

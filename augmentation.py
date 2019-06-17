@@ -4,29 +4,12 @@ from imgaug import augmenters as iaa
 from imgaug.augmentables.segmaps import SegmentationMapOnImage
 
 import numpy as np
-import matplotlib.pyplot as plt
 import itertools
 
-ia.seed(1)
-
 #parameters
-palette = {(1,64,128):0,
-           (3,143,255):1,
-           (2,255,128):2,
-           (0,0,0):3}
+from parameters import seed_value
 
-img_path = './dataset/training/images/'
-label_path = './dataset/training/labels/'
-
-image_shape = (512, 288)
-width = image_shape[0]
-height = image_shape[1]
-num_classes = 4
-batch_size=1
-do_augment = False
-
-# outer functions
-from data_loader import get_pairs, input_image_array, input_label_array, generator
+ia.seed(seed_value)
 
 seq = [None]
 

@@ -34,38 +34,43 @@ class HDF5_generator:
         #opening the HDF5 database
         self.db = h5py.File(dbPath)
         # length of dataset
-        self.ImageCount = self.db["images"].shape[0]
+        self.ImageCount = np.array(self.db["images"]).shape[0]
 
         self.image_shape = image_shape
         self.width = self.image_shape[0]
         self.height = self.image_shape[1]
         self.num_classes = num_classes
         self.batch_size = batch_size
+        self.one_hot = one_hot
         self.preprocessors = preprocessors
-        #augmentation here too?
+        self.do_augment = do_augment
 
-    def generator(self):
+    def generator(self, passes=np.inf):
         epochs = 0
 
         while epochs < passes:
-            for i in arange(0, self.ImageCount, self.batch_size):
+            for i in np.arange(0, self.ImageCount, self.batch_size):
                 # read in images and labels from HDF5
                 images = self.db["images"][i: i + self.batch_size]
                 labels = self.db["labels"][i: i + self.batch_size]
+                images = np.array(images)
+                labels = np.array(labels)
+
 
 
                 if self.preprocessors is not None:
                     image_batch = []
 
-                    for image in images:
+                    for i in range(0, len(images)):
+                        img = np.uint8(images[i].reshape(288, 512, 3))
                         for p in self.preprocessors:
-                            image = p.preprocess(image)
-                        image_batch.append(image)
+                            img = p.preprocess(img)
+                        image_batch.append(img)
 
                     images = np.array(image_batch)
 
                 # check if data augmentation should be done
-                if do_augment:
+                if self.do_augment:
 
                     aug_images = []
                     aug_labels = []
@@ -84,16 +89,16 @@ class HDF5_generator:
                     labels = np.array(aug_labels)
 
 
-                if one_hot:
+                if self.one_hot:
                     label_batch = []
-
-                    for label in labels:
+                    for i in range(0, len(images)):
+                        label = np.uint8(labels[i].reshape(288, 512))
                         one_hot_array = np.zeros((self.height, self.width, self.num_classes))
 
                         for c in range(self.num_classes):
                             one_hot_array[:, :, c] = (label == c).astype(int)
 
-                    label_batch.append(one_hot_array)
+                        label_batch.append(one_hot_array)
                     labels = np.array(label_batch)
 
                 yield (images, labels)

@@ -18,7 +18,7 @@ def load_aug():
     seq[0] = iaa.Sequential([
         iaa.Dropout([0.05, 0.2]),      # drop 5% or 20% of all pixels
         iaa.Sharpen((0.0, 1.0)),       # sharpen the image
-        iaa.Affine(rotate=(-45, 45)),  # rotate by -45 to 45 degrees (affects segmaps)
+        iaa.Affine(rotate=(-25, 25)),  # rotate by -45 to 45 degrees (affects segmaps)
         iaa.ElasticTransformation(alpha=50, sigma=5)  # apply water effect (affects segmaps)
     ], random_order=True)
 

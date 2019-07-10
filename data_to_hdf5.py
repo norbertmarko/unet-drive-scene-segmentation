@@ -11,7 +11,7 @@ class HDF5writer:
         # Database
         self.db = h5py.File(outputPath, "w")
         # Datasets
-        self.images = self.db.create_dataset("images", img_dims, dtype="float") #uint8?
+        self.images = self.db.create_dataset("images", img_dims, dtype="float")
         self.labels = self.db.create_dataset("labels", label_dims, dtype="float")
         # Buffer
         self.buffSize = buffSize
@@ -26,7 +26,7 @@ class HDF5writer:
             self.flush()
 
     def flush(self):
-        i = self.idx + len(self.buffer["images"]) # -1 ?
+        i = self.idx + len(self.buffer["images"]) 
         self.images[self.idx:i] = self.buffer["images"]
         self.labels[self.idx:i] = self.buffer["labels"]
         self.idx = i

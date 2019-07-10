@@ -2,6 +2,7 @@ from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation
 from tensorflow.keras.layers import Conv2DTranspose, concatenate
 from tensorflow.keras.layers import Input, MaxPooling2D, Dropout
 from tensorflow.keras.models import Model #API
+from parameters import num_classes
 
 def conv_block(input_tensor, n_filter, kernel=(3, 3), padding='same', initializer="he_normal"):
     x = Conv2D(n_filter, kernel, padding=padding, kernel_initializer=initializer)(input_tensor)
@@ -19,7 +20,7 @@ def deconv_block(input_tensor, residual, n_filter, kernel=(3, 3), strides=(2, 2)
     return y
 
 # NETWORK - n_classes is the desired number of classes, filters are fixed
-def Unet(input_height, input_width, n_classes=4, filters=64):
+def Unet(input_height, input_width, n_classes=num_classes, filters=64):
 
     # Downsampling
     input_layer = Input(shape=(input_height, input_width, 3), name='input')

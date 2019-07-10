@@ -4,13 +4,18 @@ import os
 palette = {(1,64,128):0,
            (3,143,255):1,
            (2,255,128):2,
-           (0,0,0):3}
+           (255,140,0):3,
+           (0,0,0):4}
 
 # Paths
 # data_serialize.py
 img_path = './dataset/training/images/'
 # data_serialize.py
 label_path = './dataset/training/labels/'
+# data_serialize.py
+img_val_path = './dataset/validation/images/'
+# data_serialize.py
+label_val_path = './dataset/validation/labels/'
 # data_serialize.py, training.py
 hdf5_path ='./hdf5_container/serialized_data.hdf5'
 # data_serialize.py, training.py
@@ -35,6 +40,10 @@ bufferSize = None
 batchSize=32
 
 # Training Parameters
+validation_split = 0.1
+dataset_length = len(os.listdir(img_path))
+# data_serialize.py
+val_size = int( dataset_length * validation_split )
 # augmentation.py
 seed_value = 1
 # training.py
@@ -42,9 +51,10 @@ batch_size = 2
 # training.py
 val_batch_size = 2
 # training.py
-steps_per_epoch = int(len(os.listdir(img_path)) // batch_size )
+val_steps = int(val_size // val_batch_size)
+steps_per_epoch = int( dataset_length // batch_size )
 # training.py
-epochs = 2
+epochs = 150
 # training.py
 one_hot=True
 # training.py

@@ -6,4 +6,4 @@ The purpose of this project is to provide a neural network capable of semantic s
 
 Training results after 150 epochs, custom re-labeled cityscapes dataset, with 5 classes:
 
-![Example 1](https://github.com/norbertmarko/unet-drive-scene-segmentation/blob/master/results.PNG)
+![Example 1](https://github.com/norbertmarko/unet-drive-scene-segmentation/blob/master/results.png)
